@@ -23,50 +23,45 @@ type ScoreKeeper struct {
 
 // GetNameCombinations gets all combinations of elements in s,
 // split by a hyphen.
-func GetNameCombinations(s []string) []string {
-	doubleSlices, optionals := getColumns(s, Name)
-	colCount := len(doubleSlices) - len(optionals)
-
-	var combos []string
-	for _, v := range optionals {
-		combos = append(combos, getAllCombinations(doubleSlices[:v])...)
-	}
-	combos = append(combos, getAllCombinations(doubleSlices)...)
-
-	for i := 0; i < len(combos); i++ {
-		if strings.Count(combos[i], "-") < colCount-1 {
-			if i <= len(combos) {
-				combos = slices.Delete(combos, i, i+1)
-				i--
-			}
-		}
-	}
-	return combos
-}
-
-// GetMaskCombinations gets all combinations of hashcat-style masks
-// for the given []string.
 func GetMaskCombinations(s []string) []string {
-	doubleSlices, optionals := getColumns(s, Mask)
-	colCount := len(doubleSlices) - len(optionals)
-
-	var combos []string
-	for _, v := range optionals {
-		combos = append(combos, getAllCombinations(doubleSlices[:v])...)
-	}
-	combos = append(combos, getAllCombinations(doubleSlices)...)
-
-	for i := 0; i < len(combos); i++ {
-		if strings.Count(combos[i], "-") < colCount-1 {
-			if i <= len(combos) {
-				combos = slices.Delete(combos, i, i+1)
-				// if we don't decrement here we'll get an index error later
-				i--
+	var masks []string
+	for _, name := range s {
+		segments := strings.Split(name, "-")
+		// For each segment, generate a mask for that segment only
+		for i := range segments {
+			maskedSegments := make([]string, len(segments))
+			copy(maskedSegments, segments)
+			maskedSegments[i] = createMask(segments[i])
+			// Only add if the mask is different from the original segment
+			if maskedSegments[i] != segments[i] {
+				masks = append(masks, strings.Join(maskedSegments, "-"))
 			}
 		}
 	}
-	return combos
+	// Fallback to old behavior if no advanced masks generated
+	if len(masks) == 0 {
+		doubleSlices, optionals := getColumns(s, Mask)
+		colCount := len(doubleSlices) - len(optionals)
+		var combos []string
+		for _, v := range optionals {
+			combos = append(combos, getAllCombinations(doubleSlices[:v])...)
+		}
+		combos = append(combos, getAllCombinations(doubleSlices)...)
+		for i := 0; i < len(combos); i++ {
+			if strings.Count(combos[i], "-") < colCount-1 {
+				if i <= len(combos) {
+					combos = slices.Delete(combos, i, i+1)
+					i--
+				}
+			}
+		}
+		return combos
+	}
+	return masks
+
 }
+
+// ...existing code...
 
 // getAllCombinations returns all combinations of each element within each slice
 // with the elements of each other slice.

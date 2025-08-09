@@ -56,7 +56,8 @@ Example:
 		if generateMasks {
 			output = azrecon.GetMaskCombinations(inputResults)
 		} else {
-			output = azrecon.GetNameCombinations(inputResults)
+			// In non-mask mode, just return the original input
+			output = inputResults
 		}
 		if len(output) == 0 {
 			logger.Fatalln("no results from azrecon package")
